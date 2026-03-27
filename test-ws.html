@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Test — Notification Server</title>
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+  <style>
+    body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+    h2 { color: #00d4ff; }
+    input, button { padding: 8px 12px; margin: 4px; border-radius: 6px; border: 1px solid #444; }
+    button { background: #00d4ff; color: #000; cursor: pointer; font-weight: bold; }
+    #log { background: #0f0f1a; border: 1px solid #333; padding: 12px; height: 300px;
+           overflow-y: auto; border-radius: 8px; margin-top: 12px; }
+    .success { color: #00ff88; }
+    .error   { color: #ff4444; }
+    .info    { color: #aaa; }
+    .msg     { color: #FFD700; }
+  </style>
+</head>
+<body>
+  <h2>🔔 WebSocket / STOMP Test Client</h2>
+
+  <label>User ID to subscribe as:</label><br>
+  <input id="userId" value="user123" />
+  <button onclick="connect()">Connect & Subscribe</button>
+  <button onclick="disconnect()">Disconnect</button>
+
+  <br><br>
+  <label>Send a test notification to user:</label><br>
+  <input id="targetUser" value="user123" />
+  <input id="apiKey" value="test_key_1" placeholder="X-API-KEY" />
+  <button onclick="sendNotification()">Send via REST API</button>
+
+  <div id="log"></div>
+
+  <script>
+    let client;
+
+    function log(msg, cls = 'info') {
+      const div = document.getElementById('log');
+      div.innerHTML += `<div class="${cls}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+      div.scrollTop = div.scrollHeight;
+    }
+
+    function connect() {
+      const userId = document.getElementById('userId').value;
+      client = new StompJs.Client({
+        brokerURL: 'ws://localhost:8080/ws-notify/websocket',
+        connectHeaders: {
+          userId: userId   // ← THIS tells the server who you are so Redis marks you online
+        },
+        onConnect: () => {
+          log('✅ Connected to STOMP broker!', 'success');
+          // Subscribe to this user's notification topic
+          client.subscribe(`/topic/notifications/${userId}`, (msg) => {
+            log('🔔 NOTIFICATION RECEIVED: ' + msg.body, 'msg');
+          });
+          log(`📡 Subscribed to /topic/notifications/${userId}`, 'success');
+        },
+        onDisconnect: () => log('🔴 Disconnected', 'error'),
+        onStompError: (frame) => log('❌ STOMP Error: ' + frame.headers?.message, 'error'),
+        onWebSocketError: (e) => log('❌ WebSocket Error: ' + e, 'error'),
+      });
+      client.activate();
+      log('Connecting to ws://localhost:8080/ws-notify/websocket ...', 'info');
+    }
+
+    function disconnect() {
+      client?.deactivate();
+    }
+
+    async function sendNotification() {
+      const targetUser = document.getElementById('targetUser').value;
+      const apiKey = document.getElementById('apiKey').value;
+      log(`📤 Sending notification to ${targetUser}...`, 'info');
+      try {
+        const res = await fetch('http://localhost:8080/api/v1/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-KEY': apiKey },
+          body: JSON.stringify({ targetUserId: targetUser, title: 'Test Alert', body: 'Real-time delivery works!', retryCount: 0 })
+        });
+        const data = await res.json();
+        log(`✅ API Response (${res.status}): ${JSON.stringify(data)}`, res.ok ? 'success' : 'error');
+      } catch(e) {
+        log('❌ API Error: ' + e.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
