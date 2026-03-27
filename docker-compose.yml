@@ -1,0 +1,45 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: notification-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: notifications_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    mem_limit: 512m
+    memswap_limit: 512m      # Equal to mem_limit = disables swap
+    cpus: "1.0"              # Max 1 CPU core
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: notification-redis
+    ports:
+      - "6379:6379"
+    restart: always
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: "0.5"              # Redis is single-threaded, 0.5 core is plenty
+    command: redis-server --maxmemory 96mb --maxmemory-policy allkeys-lru
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: notification-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark 0.4"
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    restart: always
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: "1.0"
+
+volumes:
+  mysql_data:
+
