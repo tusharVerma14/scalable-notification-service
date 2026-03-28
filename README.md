@@ -28,11 +28,18 @@ REST API (Post/api/v1/notify)
         |
    Check Redis: Is user online?
         |
-   +----+----+
-   |         |
-   v         v
- ONLINE    OFFLINE
- Push WS   Save to MySQL (PENDING)
+   +----+--------------------------+
+   |                               |
+   v                               v
+ ONLINE                         OFFLINE
+ Push WS                  Save to MySQL (PENDING)
+   |                               |
+   v                      User Re-connects
+Delivered OK              +--------v---------+
+                          | Pending Service  |
+                          +--------|---------+
+                                   |
+                          Push to WS Deliver
 ```
 
 ---
@@ -58,6 +65,33 @@ REST API (Post/api/v1/notify)
 - Database: MySQL 8.x
 - Testing: k6 (Load Testing)
 - Deployment: Docker & Docker Compose
+
+
+## Performance Benchmarks
+
+All tests were performed on an Single Instance machine (12-core)** with 24GB RAM, using **k6** load-testing scripts.
+
+### 1. REST Throughput
+*   **Metric:** Raw ingestion of notification requests.
+*   **Result:** **937 requests/second** sustained.
+*   **Latency (p95):** **20.3ms**.
+*   **Outcome:** 0 errors across 140,000+ requests.
+
+### 2. WebSocket Stability 
+*   **Metric:** Active concurrent session management.
+*   **Result:** **500 simultaneous** stable connections.
+*   **Handshake:** ~1ms connection establishment (TCP/WS Upgrade).
+
+### 3. End-to-End Delivery
+*   **Metric:** Total time from API call to client reception.
+*   **Performance (p50):** **11.2ms**.
+*   **Performance (p95):** **49.8ms**.
+
+### 4. Spike Resilience
+*   **Metric:** Sudden traffic burst resilience.
+*   **Scenario:** 0 → 500 concurrent users in 5 seconds.
+*   **Outcome:** **0% error rate**; RabbitMQ smoothly buffered the surge.
+*   **p99 Latency:** 365ms during peak peak burst.
 
 ---
 
