@@ -53,6 +53,7 @@ Delivered OK              +--------v---------+
 - Reliability: includes a Dead Letter Queue (DLQ) for failed delivery tracking.
 - Performance: leverages Java 21 Virtual Threads (Project Loom) for scalability.
 - Extensibility: designed using the Strategy pattern for adding new channels (Sms, Email).
+- AI-Powered: Integrates Google Gemini via Spring AI to automatically generate personalized notification content from brief contexts.
 
 ---
 
@@ -131,6 +132,20 @@ The server will be available at http://localhost:8080.
   "channels": ["WEBSOCKET"]
 }
 ```
+
+### Send AI-Enhanced Notification
+`POST /api/v1/notify/ai-enhance`
+
+**Request Body:**
+```json
+{
+  "targetUserId": "user_123",
+  "event": "Order Delayed",
+  "context": "Due to heavy rain in the area",
+  "channels": ["WEBSOCKET"]
+}
+```
+*Uses Google Gemini to automatically generate a friendly, personalized title and body for the notification before queuing it for delivery.*
 
 ---
 

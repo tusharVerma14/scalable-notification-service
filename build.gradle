@@ -7,6 +7,10 @@ plugins {
 group = 'com.techgiant'
 version = '0.0.1-SNAPSHOT'
 
+ext {
+	set('springAiVersion', "1.0.0-M6")
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
@@ -15,6 +19,7 @@ java {
 
 repositories {
 	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
 }
 
 dependencies {
@@ -24,6 +29,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	
+	// Spring AI
+	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 	
 	// Rate Limiting (Bucket4j)
 	implementation 'com.bucket4j:bucket4j-redis:8.10.1'
@@ -42,4 +50,10 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+	}
 }
